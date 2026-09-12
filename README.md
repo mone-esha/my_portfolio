@@ -13,6 +13,10 @@ A single-page personal portfolio built with vanilla HTML, CSS, and JavaScript. J
 - Scroll-reveal animations and an active-section nav highlight
 - Accessible: skip link, semantic HTML, `aria` labels, and reduced-motion support
 
+  ## Live demo
+
+    [View live site](https://mone-esha.github.io/my_portfolio/)
+
 ## Tech stack
 
 - HTML5 + semantic markup
