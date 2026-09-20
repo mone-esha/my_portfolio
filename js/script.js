@@ -1,4 +1,33 @@
+/* ---------- theme toggle ---------- */
+(function () {
+  const toggle = document.getElementById("themeToggle");
+  if (!toggle) {
+    console.warn("themeToggle button not found in DOM");
+    return;
+  }
 
+  function applyTheme(dark) {
+    if (dark) {
+      document.documentElement.setAttribute("data-theme", "dark");
+      toggle.textContent = "☀";
+      toggle.setAttribute("aria-pressed", "true");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      toggle.textContent = "☾";
+      toggle.setAttribute("aria-pressed", "false");
+    }
+  }
+
+  // initial state from storage
+  applyTheme(localStorage.getItem("theme") === "dark");
+
+  // click handler
+  toggle.addEventListener("click", function () {
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    applyTheme(!isDark);
+    localStorage.setItem("theme", isDark ? "light" : "dark");
+  });
+})();
 const codeforcesUsername = "moneesha_a";
 const githubUsername = "mone-esha";
 
@@ -195,22 +224,23 @@ async function loadCodeforces() {
   const content = $("#cfContent");
   const fail = (msg) => {
     state.classList.add("is-error");
-    state.innerHTML = `${esc(msg)} <a class="btn btn--ghost" style="margin-left:.6rem" href="https://codeforces.com/profile/${encodeURIComponent(cmoneesha_a)}" target="_blank" rel="noopener">Open profile</a>`;
+    state.innerHTML = `${esc(msg)} <a class="btn btn--ghost" style="margin-left:.6rem" href="https://codeforces.com/profile/${encodeURIComponent(codeforcesUsername)}" target="_blank" rel="noopener">Open profile</a>`;
   };
   try {
     const [infoRes, ratingRes, statusRes] = await Promise.all([
-      fetch(`https://codeforces.com/api/user.info?handles=${encodeURIComponent(moneesha_a)}`),
-      fetch(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(moneesha_a)}`),
-      fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(moneesha_a)}&from=1&count=200`),
+      fetch(`https://codeforces.com/api/user.info?handles=${encodeURIComponent(codeforcesUsername)}`),
+      fetch(`https://codeforces.com/api/user.rating?handle=${encodeURIComponent(codeforcesUsername)}`),
+      fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(codeforcesUsername)}&from=1&count=1000`),
     ]);
     const info = await infoRes.json();
-    if (info.status !== "OK") throw new Error(info.comment || "Codeforces request failed");
+    if (info.status !== "OK") throw new Error(info.comment || `Handle "${codeforcesUsername}" not found`);
+
     const user = info.result[0];
 
-    const rating = await ratingRes.json().catch(() => ({ result: [] }));
+    const rating = await ratingRes.json().catch(() => ({ status: "FAILED", result: [] }));
     const contests = rating.status === "OK" ? rating.result : [];
 
-    const status = await statusRes.json().catch(() => ({ result: [] }));
+    const status = await statusRes.json().catch(() => ({ status: "FAILED", result: [] }));
     const solved = new Set();
     if (status.status === "OK") {
       status.result.forEach((s) => {
@@ -232,8 +262,8 @@ async function loadCodeforces() {
     state.classList.add("hidden");
     content.classList.remove("hidden");
   } catch (err) {
-    console.warn("Codeforces:", err);
-    fail("Couldn't load Codeforces stats right now.");
+    console.error("Codeforces error:", err);
+    fail(`Couldn't load Codeforces stats: ${err.message}`);
   }
 }
 
@@ -251,9 +281,13 @@ function renderContribPlaceholder() {
 async function loadGithub() {
   const state = $("#ghState");
   const content = $("#ghContent");
-  $("#ghLink").href = `https://github.com/${mone-esha}`;
+  $("#ghLink").href = `https://github.com/${githubUsername}`;
   try {
-    const userRes = await fetch(`https://api.github.com/users/${encodeURIComponent(mone-esha)}`);
+    const userRes = await fetch(`https://api.github.com/users/${encodeURIComponent(githubUsername)}`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (userRes.status === 404) throw new Error(`GitHub user "${githubUsername}" not found`);
+    if (userRes.status === 403) throw new Error("GitHub API rate limit reached. Try again later.");
     if (!userRes.ok) throw new Error(`GitHub responded ${userRes.status}`);
     const user = await userRes.json();
 
@@ -265,9 +299,13 @@ async function loadGithub() {
       statCard("Gists", user.public_gists ?? 0),
     ].join("");
 
-    
-    const reposRes = await fetch(`https://api.github.com/users/${encodeURIComponent(mone-esha)}/repos?per_page=100&sort=updated`);
-    const repos = reposRes.ok ? await reposRes.json() : [];
+    const reposRes = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos?per_page=100&sort=updated`,
+      { headers: { Accept: "application/vnd.github+json" } }
+    );
+    if (!reposRes.ok) throw new Error(`GitHub repos request failed (${reposRes.status})`);
+    const repos = await reposRes.json();
+
     const counts = {};
     (Array.isArray(repos) ? repos : []).forEach((r) => {
       if (r.language) counts[r.language] = (counts[r.language] || 0) + 1;
@@ -287,9 +325,9 @@ async function loadGithub() {
     state.classList.add("hidden");
     content.classList.remove("hidden");
   } catch (err) {
-    console.warn("GitHub:", err);
+    console.error("GitHub error:", err);
     state.classList.add("is-error");
-    state.innerHTML = `Couldn't load GitHub stats right now. <a class="btn btn--ghost" style="margin-left:.6rem" href="https://github.com/${encodeURIComponent(mone-esha)}" target="_blank" rel="noopener">Open profile</a>`;
+    state.innerHTML = `${esc(err.message)} <a class="btn btn--ghost" style="margin-left:.6rem" href="https://github.com/${encodeURIComponent(githubUsername)}" target="_blank" rel="noopener">Open profile</a>`;
   }
 }
 
@@ -313,46 +351,7 @@ lazyLoadSection("codeforces", loadCodeforces);
 lazyLoadSection("github", loadGithub);
 
 
-const form = $("#contactForm");
-const statusEl = $("#formStatus");
-const rules = {
-  name: (v) => (v.trim().length >= 2 ? "" : "Please enter your name."),
-  email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? "" : "Please enter a valid email address."),
-  subject: (v) => (v.trim().length >= 3 ? "" : "Please add a short subject."),
-  message: (v) => (v.trim().length >= 15 ? "" : "Your message should be at least 15 characters."),
-};
 
-function validateField(input) {
-  const msg = rules[input.name](input.value);
-  const field = input.closest(".field");
-  field.classList.toggle("is-invalid", Boolean(msg));
-  $(`#err-${input.name}`).textContent = msg;
-  input.setAttribute("aria-invalid", msg ? "true" : "false");
-  return !msg;
-}
-
-$$("#contactForm input, #contactForm textarea").forEach((input) => {
-  input.addEventListener("blur", () => validateField(input));
-  input.addEventListener("input", () => {
-    if (input.closest(".field").classList.contains("is-invalid")) validateField(input);
-  });
-});
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const inputs = $$("#contactForm input, #contactForm textarea");
-  const valid = inputs.map(validateField).every(Boolean);
-  if (!valid) {
-    statusEl.style.color = "var(--danger)";
-    statusEl.textContent = "Please fix the highlighted fields.";
-    inputs.find((i) => i.closest(".field").classList.contains("is-invalid"))?.focus();
-    return;
-  }
-  
-  statusEl.style.color = "var(--accent)";
-  statusEl.textContent = "Thanks! Your message has been validated and is ready to send.";
-  form.reset();
-});
 
 
 $("#year").textContent = String(new Date().getFullYear());

@@ -1,11 +1,7 @@
-/* =========================================================
-   [Your Name] — Portfolio stylesheet
-   "Inked Grid" — a paper-and-marker, neo-brutalist take.
-   Design tokens first, then base, layout, components.
-   ========================================================= */
+
 
 :root {
-  /* colors — warm paper + punchy ink */
+  
   --bg: #f3efe4;
   --bg-2: #ece3cf;
   --surface: #fffdf7;
@@ -18,6 +14,8 @@
   --secondary: #0031ff;
   --accent: #ffd23f;
   --danger: #d7263d;
+
+  
 
   --grad: linear-gradient(100deg, var(--primary), var(--secondary) 55%, var(--accent));
   --grad-soft: linear-gradient(140deg, rgba(255,77,28,.16), rgba(0,49,255,.10));
@@ -36,6 +34,36 @@
   --nav-h: 68px;
   --ease: cubic-bezier(.22, .61, .36, 1);
 }
+/* ---------- dark theme ---------- */
+[data-theme="dark"] {
+  --bg: #14120c;
+  --bg-2: #1c1811;
+  --surface: #1f1b13;
+  --surface-2: #262117;
+  --border: rgba(243, 239, 228, 0.16);
+  --border-strong: rgba(243, 239, 228, 0.9);
+  --text: #f3efe4;
+  --text-dim: #b8b09a;
+  --primary: #ff6b3d;
+  --secondary: #5b7cff;
+  --accent: #ffd23f;
+  --danger: #ff5c6e;
+  --grad: linear-gradient(100deg, var(--primary), var(--secondary) 55%, var(--accent));
+  --grad-soft: linear-gradient(140deg, rgba(255,107,61,.18), rgba(91,124,255,.12));
+  --shadow: 6px 6px 0 0 var(--text);
+  --shadow-sm: 4px 4px 0 0 var(--text);
+  --ring: 0 0 0 3px var(--accent), 0 0 0 5px var(--text);
+}
+
+/* grid lines need to be light on dark bg */
+[data-theme="dark"] .bg-grid {
+  background-image:
+    linear-gradient(rgba(243,239,228,.07) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(243,239,228,.07) 1.5px, transparent 1.5px);
+}
+
+/* smooth color swap */
+body { transition: background-color .3s var(--ease), color .3s var(--ease); }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--nav-h) + 12px); }
@@ -136,6 +164,15 @@ a { color: inherit; text-decoration: none; }
 .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
 .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.nav__actions { display: flex; align-items: center; gap: .5rem; }
+
+.theme-toggle {
+  width: 42px; height: 42px; display: grid; place-content: center;
+  background: var(--surface); border: 2px solid var(--text); border-radius: var(--r-sm);
+  cursor: pointer; box-shadow: var(--shadow-sm); font-size: 1.1rem; color: var(--text);
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.theme-toggle:hover { transform: translate(2px, 2px); box-shadow: 0 0 0 0 var(--text); }
 
 @media (max-width: 899px) {
   .nav__links.is-open {
@@ -358,7 +395,7 @@ a { color: inherit; text-decoration: none; }
   .grid--3 { grid-template-columns: repeat(3, 1fr); }
   .hero__grid { grid-template-columns: 1.15fr .85fr; }
   .hero__visual { justify-items: end; }
-  .contact { grid-template-columns: 1.3fr .7fr; align-items: start; }
+  .contact { grid-template-columns: 1fr; max-width: 560px;  }
   .scroll-down { position: absolute; left: 50%; bottom: 1.5rem; transform: translateX(-50%); margin: 0; }
 }
 
